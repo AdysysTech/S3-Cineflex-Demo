@@ -20,7 +20,17 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ success: true, order }, { status: 200 });
+    return NextResponse.json(
+      { success: true, order },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "CDN-Cache-Control": "no-store",
+          "Vercel-CDN-Cache-Control": "no-store",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET /api/orders/[id] error:", error);
     return NextResponse.json(

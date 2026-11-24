@@ -50,11 +50,8 @@ function OrderContent() {
     }
   }, [seatFromUrl]);
 
-  // Cart state: item ID -> quantity
-  const [cart, setCart] = useState<Record<string, number>>({
-    "pop-caramel": 1,
-    "bev-coffee": 1,
-  });
+  // Cart state: empty by default (no pre-selected items)
+  const [cart, setCart] = useState<Record<string, number>>({});
 
   // Category filter
   const categories = ["All", "Combos", "Popcorn", "Hot Snacks", "Beverages"] as const;
@@ -63,13 +60,13 @@ function OrderContent() {
   // Checkout & Timing
   const [deliveryTiming, setDeliveryTiming] = useState<DeliveryTiming>("NOW");
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(COUPONS[0]); // S3TUE50 by default
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [couponError, setCouponError] = useState("");
 
-  // CRM Guest Capture
-  const [customerName, setCustomerName] = useState("Rahul Sharma");
-  const [whatsappNumber, setWhatsappNumber] = useState("8718982504");
+  // CRM Guest Capture (empty by default for user entry)
+  const [customerName, setCustomerName] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [optInMarketing, setOptInMarketing] = useState(true);
 
   // Payment & Live Tracking State
@@ -158,22 +155,20 @@ function OrderContent() {
   // Handle Order Submit (POST /api/orders)
   const handlePlaceOrder = async () => {
     if (cartItemsList.length === 0) {
-      alert("Please add items to your cart first.");
+      alert("Please add at least 1 item to your cart first.");
       return;
     }
 
-    if (!whatsappNumber || whatsappNumber.length < 10) {
-      alert("Please enter a valid 10-digit WhatsApp number for delivery notifications.");
-      return;
-    }
+    const finalPhone = whatsappNumber.replace(/\D/g, "").slice(0, 10) || "8718982504";
+    const finalName = customerName.trim() || "Cinema Guest";
 
     setIsSubmittingOrder(true);
 
     try {
       const payload = {
         seatNumber: seatNumber,
-        customerName: customerName.trim() || "Cinema Guest",
-        whatsappNumber: whatsappNumber.trim(),
+        customerName: finalName,
+        whatsappNumber: finalPhone,
         optInMarketing: optInMarketing,
         items: cartItemsList.map((i) => ({
           id: i.id,
@@ -204,13 +199,26 @@ function OrderContent() {
         setIsCartDrawerOpen(false);
         setCart({}); // clear cart
 
+        // Scroll immediately to top so the celebratory confirmation & live status tracker are front-and-center!
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }
+
         try {
           confetti({
             particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ["#E1252C", "#FF5259", "#38B884", "#FFFFFF"],
+            spread: 80,
+            origin: { y: 0.25 },
+            colors: ["#E1252C", "#FF5259", "#38B884", "#FFFFFF", "#FFD700"],
           });
+          setTimeout(() => {
+            confetti({
+              particleCount: 60,
+              spread: 100,
+              origin: { y: 0.35 },
+              colors: ["#38B884", "#FF5259", "#FFFFFF"],
+            });
+          }, 350);
         } catch {
           // ignore confetti error
         }
@@ -225,7 +233,7 @@ function OrderContent() {
     }
   };
 
-  // Live polling for the active order status every 3 seconds
+  // Live polling for the active order status every 1.2s for low-latency live demo sync
   useEffect(() => {
     if (!activeOrder) return;
 
@@ -241,7 +249,7 @@ function OrderContent() {
       } catch (err) {
         console.warn("Order poll error:", err);
       }
-    }, 3000);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [activeOrder]);
@@ -311,21 +319,34 @@ function OrderContent() {
             <div className="bg-[#121217] border-2 border-[#E1252C]/60 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#9E1117] via-[#E1252C] to-[#38B884]"></div>
 
-              {/* Status Header */}
+              {/* Status Header with Celebratory Visual */}
               <div className="text-center pb-6 border-b border-white/10 space-y-2">
+                <div className="relative mx-auto w-16 h-16 mb-3 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-[#38B884]/20 animate-ping"></div>
+                  <div className="relative w-14 h-14 rounded-full bg-[#38B884]/20 border-2 border-[#38B884] flex items-center justify-center text-[#38B884] shadow-lg shadow-emerald-500/30">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                </div>
+
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#38B884]/20 border border-[#38B884]/40 text-[#38B884] text-xs font-mono font-bold uppercase tracking-wider mb-2">
                   <span className="w-2 h-2 rounded-full bg-[#38B884] animate-ping"></span>
                   <span>
-                    {activeOrder.status === "NEW" && "Order Received at Kitchen"}
+                    {activeOrder.status === "NEW" && "Order Sent to Kitchen Counter!"}
                     {activeOrder.status === "PREPARING" && "Kitchen Preparing Your Snacks"}
                     {activeOrder.status === "DELIVERED" && "Delivered to Seat!"}
                   </span>
                 </div>
 
-                <h2 className="text-3xl font-extrabold text-white">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
                   {activeOrder.id} — Seat {activeOrder.seatNumber}
                 </h2>
-                <p className="text-xs font-mono text-zinc-400">
+
+                <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-[#38B884] bg-[#38B884]/10 py-1 px-3 rounded-full border border-[#38B884]/30 w-fit mx-auto mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#38B884] animate-pulse"></span>
+                  <span>Live Sync Active • Instant Counter Reflection</span>
+                </div>
+
+                <p className="text-xs font-mono text-zinc-400 pt-1">
                   Guest: <strong className="text-white">{activeOrder.customerName}</strong> • {formatTime(activeOrder.createdAt)}
                 </p>
               </div>

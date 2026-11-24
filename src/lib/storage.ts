@@ -1,20 +1,29 @@
 import { FoodOrder, CRMContact, OrderStatus } from "./types";
 import { Redis } from "@upstash/redis";
 
-// Check if Upstash Redis credentials exist in environment
-const hasUpstash = Boolean(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-);
+// Check if Upstash Redis or Vercel KV credentials exist in environment
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_REST_API_URL ||
+  process.env.REDIS_REST_API_URL;
+
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.KV_REST_API_TOKEN ||
+  process.env.REDIS_REST_API_TOKEN;
+
+const hasRedis = Boolean(redisUrl && redisToken);
 
 let redisClient: Redis | null = null;
-if (hasUpstash) {
+if (hasRedis) {
   try {
     redisClient = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      url: redisUrl!,
+      token: redisToken!,
     });
+    console.log("[Storage] Successfully connected to Redis / Vercel KV!");
   } catch (err) {
-    console.warn("Failed to initialize Upstash Redis, falling back to in-memory:", err);
+    console.warn("Failed to initialize Redis, falling back to in-memory:", err);
     redisClient = null;
   }
 }

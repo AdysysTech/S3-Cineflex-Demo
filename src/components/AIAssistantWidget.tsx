@@ -133,10 +133,10 @@ export default function AIAssistantWidget() {
   };
 
   return (
-    <div id="s3-assistant-widget" className="fixed bottom-6 right-20 sm:right-24 z-50">
+    <div id="s3-assistant-widget" className="fixed bottom-[154px] sm:bottom-[92px] left-4 sm:left-6 z-40">
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-[350px] sm:w-[380px] max-w-[calc(100vw-2rem)] h-[500px] bg-[#121217] border border-white/15 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="absolute bottom-16 left-0 w-[340px] sm:w-[380px] max-w-[calc(100vw-2rem)] h-[490px] bg-[#121217] border border-white/15 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#1A1A22] via-[#23232D] to-[#1A1A22] p-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-3">

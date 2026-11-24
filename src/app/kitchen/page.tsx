@@ -37,6 +37,7 @@ export default function KitchenKDSPage() {
 
   const prevOrderCountRef = useRef<number>(0);
   const prevOrderIdsRef = useRef<Set<string>>(new Set());
+  const isInitialLoadRef = useRef<boolean>(true);
 
   // Fetch orders from API
   const fetchOrders = async () => {
@@ -52,8 +53,13 @@ export default function KitchenKDSPage() {
           (o) => !prevOrderIdsRef.current.has(o.id) && o.status === "NEW"
         );
 
-        if (hasNewOrder && prevOrderIdsRef.current.size > 0 && isAudioEnabled) {
+        // Chime if not initial page load and new order arrived
+        if (!isInitialLoadRef.current && hasNewOrder && isAudioEnabled) {
           playOrderChime();
+        }
+
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
         }
 
         prevOrderIdsRef.current = currentIds;
@@ -79,16 +85,29 @@ export default function KitchenKDSPage() {
     }
   };
 
-  // Initial load + poll every 2 seconds
+  // Initial load + ultra-fast 1s poll for live demo responsiveness
   useEffect(() => {
     fetchOrders();
     fetchCRM();
 
     const interval = setInterval(() => {
       fetchOrders();
-    }, 2000);
+    }, 1000);
 
-    return () => clearInterval(interval);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchOrders();
+        fetchCRM();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", fetchOrders);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", fetchOrders);
+    };
   }, [isAudioEnabled]);
 
   // Audio Toggle
